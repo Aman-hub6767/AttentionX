@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttentionX - AI Content Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080b0f;
+  --surface:#0f1419;
+  --border:#1e2630;
+  --accent:#ff3c3c;
+  --gold:#ffd166;
+  --cyan:#06d6a0;
+  --text:#e8edf2;
+  --muted:#5a6475;
+  --card:#131b24;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;}
+header{padding:24px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;}
+.logo span{color:var(--accent);}
+.badge{font-size:.65rem;background:var(--accent);color:white;padding:4px 10px;letter-spacing:1.5px;text-transform:uppercase;}
+.hero{text-align:center;padding:80px 24px 40px;}
+.hero-tag{display:inline-block;font-size:.7rem;letter-spacing:3px;color:var(--cyan);border:1px solid var(--cyan);padding:6px 16px;margin-bottom:28px;text-transform:uppercase;}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,6vw,4rem);font-weight:800;line-height:1.1;letter-spacing:-2px;margin-bottom:20px;}
+.hero h1 em{font-style:normal;color:var(--accent);}
+.hero p{color:var(--muted);font-size:.9rem;max-width:480px;margin:0 auto 40px;line-height:1.7;}
+.stats{display:flex;justify-content:center;gap:48px;margin-bottom:60px;flex-wrap:wrap;}
+.stat-num{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--gold);}
+.stat-label{font-size:.65rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
+.container{max-width:860px;margin:0 auto;padding:0 24px 80px;}
+ 
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);padding:60px 40px;text-align:center;background:var(--card);cursor:pointer;transition:border-color .2s,background .2s;}
+.upload-zone:hover{border-color:var(--accent);background:#161e27;}
+.upload-zone.drag-over{border-color:var(--accent);background:#161e27;}
+.upload-icon{font-size:2.5rem;margin-bottom:16px;}
+.upload-zone h2{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:10px;}
+.upload-zone p{color:var(--muted);font-size:.78rem;margin-bottom:20px;}
+.btn-upload{background:var(--accent);color:white;padding:12px 32px;font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:1px;border:none;cursor:pointer;text-transform:uppercase;}
+.btn-upload:hover{background:#ff5555;}
+#fileInput{display:none;}
+ 
+/* FILE INFO */
+.file-info{display:none;margin-top:16px;padding:18px 22px;background:var(--surface);border:1px solid var(--border);align-items:center;gap:14px;}
+.file-info.visible{display:flex;}
+.file-icon{font-size:1.8rem;}
+.file-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem;margin-bottom:3px;}
+.file-meta{font-size:.7rem;color:var(--muted);}
+ 
+/* PROCESS BTN */
+.btn-process{width:100%;margin-top:20px;padding:18px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;letter-spacing:2px;border:none;cursor:pointer;text-transform:uppercase;display:none;}
+.btn-process.visible{display:block;}
+.btn-process:hover{background:#e03030;}
+.btn-process:disabled{opacity:.5;cursor:not-allowed;}
+ 
+/* PROGRESS */
+.progress-section{display:none;margin-top:28px;}
+.progress-section.visible{display:block;}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:10px;}
+.prog-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;}
+.prog-pct{font-size:.75rem;color:var(--accent);}
+.prog-bar{height:4px;background:var(--border);margin-bottom:14px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));width:0%;transition:width .35s ease;}
+.steps{display:flex;gap:8px;flex-wrap:wrap;}
+.step{font-size:.62rem;padding:4px 10px;background:var(--surface);border:1px solid var(--border);color:var(--muted);letter-spacing:1px;text-transform:uppercase;transition:all .25s;}
+.step.active{border-color:var(--cyan);color:var(--cyan);}
+.step.done{text-decoration:line-through;opacity:.5;}
+ 
+/* ERROR */
+.error-box{display:none;margin-top:16px;padding:14px 18px;background:rgba(255,60,60,.08);border:1px solid rgba(255,60,60,.3);color:#ff8080;font-size:.78rem;line-height:1.6;}
+.error-box.visible{display:block;}
+ 
+/* RESULTS */
+.results-section{display:none;margin-top:48px;}
+.results-section.visible{display:block;}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.results-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;}
+.results-count{font-size:.68rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.clips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;}
+ 
+/* CLIP CARD */
+.clip-card{background:var(--card);border:1px solid var(--border);overflow:hidden;transition:border-color .2s,transform .2s;}
+.clip-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.clip-thumb{position:relative;background:#0a1018;cursor:pointer;overflow:hidden;height:200px;}
+.clip-thumb img{width:100%;height:100%;object-fit:cover;}
+.play-btn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);font-size:2rem;transition:background .2s;}
+.clip-thumb:hover .play-btn{background:rgba(255,60,60,.35);}
+.energy-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--border);}
+.energy-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));}
+.clip-body{padding:14px;}
+.clip-num{font-size:.62rem;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.clip-hook{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;line-height:1.35;margin-bottom:10px;}
+.clip-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.meta-tag{font-size:.58rem;padding:3px 7px;background:var(--surface);color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.clip-keywords{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;}
+.keyword{font-size:.58rem;padding:2px 7px;border:1px solid var(--border);color:var(--cyan);}
+.btn-dl{width:100%;padding:9px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-dl:hover{background:var(--accent);color:white;}
+ 
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;display:none;align-items:center;justify-content:center;}
+.modal.open{display:flex;}
+.modal-inner{position:relative;max-width:380px;width:90%;}
+.modal-inner video{width:100%;max-height:80vh;}
+.modal-close{position:absolute;top:-36px;right:0;background:none;border:1px solid #555;color:white;padding:3px 12px;cursor:pointer;font-size:.75rem;font-family:'Space Mono',monospace;}
+.modal-close:hover{border-color:var(--accent);color:var(--accent);}
+ 
+/* HOW IT WORKS */
+.how-section{margin-top:72px;padding-top:48px;border-top:1px solid var(--border);}
+.sec-label{font-size:.65rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:28px;}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);}
+.step-card{background:var(--card);padding:24px 20px;}
+.step-n{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--accent);opacity:.35;margin-bottom:10px;}
+.step-t{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:6px;}
+.step-d{font-size:.7rem;color:var(--muted);line-height:1.6;}
+
+/* FOOTER */
+footer{
+  border-top:1px solid var(--border);
+  padding:32px 48px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  background:var(--surface);
+}
+.footer-left{font-size:.72rem;color:var(--muted);line-height:1.8;}
+.footer-left strong{color:var(--gold);font-family:'Syne',sans-serif;font-size:.85rem;}
+.footer-right{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.btn-ppt{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 22px;
+  background:transparent;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  font-family:'Syne',sans-serif;
+  font-weight:700;
+  font-size:.72rem;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  text-decoration:none;
+  cursor:pointer;
+  transition:all .2s;
+}
+.btn-ppt:hover{background:var(--gold);color:#080b0f;}
+.footer-copy{font-size:.62rem;color:var(--muted);letter-spacing:1px;}
+</style>
+</head>
+<body>
+ 
+<header>
+  <div class="logo">Attention<span>X</span></div>
+  <span class="badge">Beta</span>
+</header>
+ 
+<section class="hero">
+  <div class="hero-tag">AI Content Repurposing Engine</div>
+  <h1>Long Videos.<br/><em>Viral Shorts.</em><br/>Automatically.</h1>
+  <p>Upload karo apna lecture ya podcast. AI khud dhundh lega best moments aur banayega Reels-ready clips with hooks.</p>
+</section>
+ 
+<div class="stats">
+  <div class="stat-item"><div class="stat-num">5x</div><div class="stat-label">Faster than manual</div></div>
+  <div class="stat-item"><div class="stat-num">9:16</div><div class="stat-label">Auto vertical crop</div></div>
+  <div class="stat-item"><div class="stat-num">AI</div><div class="stat-label">Peak detection</div></div>
+  <div class="stat-item"><div class="stat-num">INF</div><div class="stat-label">Content potential</div></div>
+</div>
+ 
+<div class="container">
+ 
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon">[ UP ]</div>
+    <h2>Drop your video here</h2>
+    <p>MP4, MOV, AVI, MKV, WebM supported</p>
+    <button class="btn-upload" id="selectBtn">Select Video File</button>
+    <input type="file" id="fileInput" accept="video/mp4,video/mov,video/avi,video/mkv,video/webm,.mp4,.mov,.avi,.mkv,.webm"/>
+  </div>
+ 
+  <div class="file-info" id="fileInfo">
+    <div class="file-icon">[V]</div>
+    <div>
+      <div class="file-name" id="fileName">-</div>
+      <div class="file-meta" id="fileMeta">-</div>
+    </div>
+  </div>
+ 
+  <button class="btn-process" id="btnProcess">Generate Viral Clips</button>
+ 
+  <div class="error-box" id="errorBox"></div>
+ 
+  <div class="progress-section" id="progressSection">
+    <div class="prog-header">
+      <span class="prog-title">Processing video...</span>
+      <span class="prog-pct" id="progPct">0%</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <div class="steps">
+      <span class="step" id="s1">Uploading</span>
+      <span class="step" id="s2">Analysing</span>
+      <span class="step" id="s3">Detecting peaks</span>
+      <span class="step" id="s4">Cutting clips</span>
+      <span class="step" id="s5">Vertical crop</span>
+      <span class="step" id="s6">Captions</span>
+    </div>
+  </div>
+ 
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <div class="results-title">Your Viral Clips</div>
+      <div class="results-count" id="resultsCount">0 clips</div>
+    </div>
+    <div class="clips-grid" id="clipsGrid"></div>
+  </div>
+ 
+  <div class="how-section">
+    <div class="sec-label">How AttentionX works</div>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-n">01</div><div class="step-t">Audio Peak Detection</div><div class="step-d">FFmpeg se audio volume analyze hota hai aur loud moments tag hote hain.</div></div>
+      <div class="step-card"><div class="step-n">02</div><div class="step-t">Smart Clip Selection</div><div class="step-d">Energy score ke basis pe best 3-5 moments select hote hain.</div></div>
+      <div class="step-card"><div class="step-n">03</div><div class="step-t">Vertical Crop 9:16</div><div class="step-d">Reels aur Shorts ke liye perfect vertical format automatically.</div></div>
+      <div class="step-card"><div class="step-n">04</div><div class="step-t">Hook Generation</div><div class="step-d">Catchy headline generate hoti hai jo scroll rokti hai.</div></div>
+    </div>
+  </div>
+ 
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    Developed by <strong>Gyanendra Pandey</strong><br/>
+    <span>AttentionX &mdash; AI Content Repurposing Engine</span>
+  </div>
+  <div class="footer-right">
+    <a class="btn-ppt" href="https://drive.google.com/file/d/1x90yDHvD5ijukUlPL3kmvKAPj8qR3nYg/view?usp=sharing" target="_blank">
+      [PPT] View Presentation
+    </a>
+    <span class="footer-copy">&copy; 2026 AttentionX</span>
+  </div>
+</footer>
+ 
+<div class="modal" id="modal">
+  <div class="modal-inner">
+    <button class="modal-close" id="modalClose">X Close</button>
+    <video controls id="modalVideo"></video>
+  </div>
+</div>
+ 
+<script>
+var API = window.location.origin;
+var currentFile = null;
+var uploadedData = null;
+ 
+document.getElementById('selectBtn').addEventListener('click', function(e) {
+  e.stopPropagation();
+  document.getElementById('fileInput').click();
+});
+ 
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  if (e.target.files && e.target.files[0]) {
+    handleFile(e.target.files[0]);
+  }
+});
+ 
+var zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  zone.classList.add('drag-over');
+});
+zone.addEventListener('dragleave', function() {
+  zone.classList.remove('drag-over');
+});
+zone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  var f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+ 
+function handleFile(file) {
+  currentFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = (file.size / (1024*1024)).toFixed(1) + ' MB';
+  document.getElementById('fileInfo').classList.add('visible');
+  document.getElementById('btnProcess').classList.add('visible');
+  document.getElementById('errorBox').classList.remove('visible');
+}
+ 
+document.getElementById('btnProcess').addEventListener('click', function() {
+  if (!currentFile) return;
+  document.getElementById('btnProcess').disabled = true;
+  document.getElementById('resultsSection').classList.remove('visible');
+  document.getElementById('errorBox').classList.remove('visible');
+  document.getElementById('progressSection').classList.add('visible');
+  resetSteps();
+  setProgress(5);
+ 
+  setStep('s1', 'active');
+  var form = new FormData();
+  form.append('file', currentFile);
+ 
+  fetch(API + '/upload', { method: 'POST', body: form })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'Upload failed'); });
+      return r.json();
+    })
+    .then(function(data) {
+      uploadedData = data;
+      setStep('s1', 'done');
+      setStep('s2', 'active');
+      setProgress(20);
+      return wait(500);
+    })
+    .then(function() {
+      setStep('s2', 'done');
+      setStep('s3', 'active');
+      setProgress(35);
+      return fetch(API + '/process/' + uploadedData.job_id, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ video_path: uploadedData.video_path })
+      });
+    })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'Processing failed'); });
+      return r.json();
+    })
+    .then(function(data) {
+      setStep('s3', 'done');
+      setStep('s4', 'active');
+      setProgress(60);
+      return wait(400).then(function() { return data; });
+    })
+    .then(function(data) {
+      setStep('s4', 'done');
+      setStep('s5', 'active');
+      setProgress(75);
+      return wait(300).then(function() { return data; });
+    })
+    .then(function(data) {
+      setStep('s5', 'done');
+      setStep('s6', 'active');
+      setProgress(90);
+      return wait(300).then(function() { return data; });
+    })
+    .then(function(data) {
+      setStep('s6', 'done');
+      setProgress(100);
+      return wait(300).then(function() { return data; });
+    })
+    .then(function(data) {
+      showResults(data);
+    })
+    .catch(function(err) {
+      document.getElementById('progressSection').classList.remove('visible');
+      var box = document.getElementById('errorBox');
+      box.textContent = 'Error: ' + err.message;
+      box.classList.add('visible');
+    })
+    .finally(function() {
+      document.getElementById('btnProcess').disabled = false;
+    });
+});
+ 
+function showResults(data) {
+  document.getElementById('progressSection').classList.remove('visible');
+  document.getElementById('resultsSection').classList.add('visible');
+  document.getElementById('resultsCount').textContent = data.total_clips + ' clips generated';
+  var grid = document.getElementById('clipsGrid');
+  grid.innerHTML = '';
+ 
+  if (data.total_clips === 0) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:.8rem;">Koi clip generate nahi hua. Video thodi lambi honi chahiye (1+ minute).</p>';
+    return;
+  }
+ 
+  data.clips.forEach(function(clip, idx) {
+    var card = document.createElement('div');
+    card.className = 'clip-card';
+ 
+    var keywords = (clip.keywords || []).slice(0, 3).map(function(k) {
+      return '<span class="keyword">#' + k + '</span>';
+    }).join('');
+ 
+    var metaTags = [
+      clip.duration + 's',
+      clip.energy_score + '% energy',
+      '9:16'
+    ].map(function(t) {
+      return '<span class="meta-tag">' + t + '</span>';
+    }).join('');
+ 
+    var thumbHtml = clip.thumbnail_url
+      ? '<img src="' + clip.thumbnail_url + '" alt="thumb" onerror="this.style.display=\'none\'">'
+      : '';
+ 
+    card.innerHTML =
+      '<div class="clip-thumb" onclick="playVideo(\'' + clip.video_url + '\')">' +
+        thumbHtml +
+        '<div class="play-btn">&#9654;</div>' +
+        '<div class="energy-bar"><div class="energy-fill" style="width:' + clip.energy_score + '%"></div></div>' +
+      '</div>' +
+      '<div class="clip-body">' +
+        '<div class="clip-num">Clip ' + clip.clip_number + ' &middot; ' + formatTime(clip.start_time) + ' - ' + formatTime(clip.end_time) + '</div>' +
+        '<div class="clip-hook">' + clip.hook + '</div>' +
+        '<div class="clip-meta">' + metaTags + '</div>' +
+        '<div class="clip-keywords">' + keywords + '</div>' +
+        '<button class="btn-dl" onclick="dlClip(\'' + clip.video_url + '\',\'' + clip.clip_id + '\')">Download Clip</button>' +
+      '</div>';
+ 
+    grid.appendChild(card);
+  });
+ 
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+}
+ 
+function formatTime(sec) {
+  var m = Math.floor(sec / 60);
+  var s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+ 
+function playVideo(url) {
+  document.getElementById('modalVideo').src = url;
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('modalVideo').play();
+}
+ 
+document.getElementById('modalClose').addEventListener('click', function() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('modalVideo').pause();
+  document.getElementById('modalVideo').src = '';
+});
+ 
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === document.getElementById('modal')) {
+    document.getElementById('modalClose').click();
+  }
+});
+ 
+function dlClip(url, id) {
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = id + '.mp4';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+ 
+function setProgress(pct) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = pct + '%';
+}
+ 
+function setStep(id, state) {
+  var el = document.getElementById(id);
+  el.className = 'step' + (state ? ' ' + state : '');
+}
+ 
+function resetSteps() {
+  ['s1','s2','s3','s4','s5','s6'].forEach(function(id) {
+    document.getElementById(id).className = 'step';
+  });
+}
+ 
+function wait(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+</script>
+</body>
+</html>
