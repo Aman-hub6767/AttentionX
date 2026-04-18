@@ -84,3 +84,9 @@ attentionx/
 2. Press the **"Generate Viral Clips"** button
 3. Wait for processing to complete
 4. Preview the generated clips and download them
+
+---
+
+## Demo Video
+
+▶️ [Watch Demo on Google Drive](https://drive.google.com/file/d/1PQWDbQXNHYRC2NfbtJq6Gj5KrKtIOwTh/view?usp=sharing)
